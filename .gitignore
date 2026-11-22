@@ -148,3 +148,5 @@ uv.lock
 
 src/apple_fm_sdk/FoundationModelsBindings
 src/apple_fm_sdk/_ctypes_bindings.py
+
+*.patch
