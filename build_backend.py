@@ -82,67 +82,6 @@ def _build_c_bindings(
             "No `swift` executable found in PATH. Is `swift` set up on your system?"
         )
 
-    # Check if xcode-select points to a full Xcode installation (not just Command Line Tools)
-    try:
-        developer_dir = subprocess.run(
-            ["xcode-select", "-p"],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-
-        # Command Line Tools path is typically /Library/Developer/CommandLineTools
-        # Full Xcode path is typically /Applications/Xcode.app/Contents/Developer
-        if "CommandLineTools" in developer_dir:
-            raise SwiftToolingError(
-                f"The active developer directory is set to Command Line Tools ({developer_dir}), "
-                "but a full Xcode installation is required. Please install Xcode. Then open Xcode"
-                "at least once to accept the license agreement and install the Swift SDKs."
-            )
-    except subprocess.CalledProcessError as e:
-        raise SwiftToolingError(
-            f"Failed to check active developer directory: {e.stderr if e.stderr else str(e)}"
-        )
-
-    # Check if Xcode is installed and version >= 26.0
-    if shutil.which("xcodebuild") is None:
-        raise SwiftToolingError(
-            "No `xcodebuild` executable found in PATH. Is Xcode installed on your system?"
-        )
-
-    try:
-        xcode_version_output = subprocess.run(
-            ["xcodebuild", "-version"],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-
-        # Parse version from output like "Xcode 26.0" or "Xcode 26.0.1"
-        version_match = re.search(r"Xcode\s+(\d+)\.(\d+)", xcode_version_output)
-        if not version_match:
-            raise SwiftToolingError(
-                f"Could not parse Xcode version from: {xcode_version_output}"
-            )
-
-        major_version = int(version_match.group(1))
-        minor_version = int(version_match.group(2))
-
-        if major_version < 26:
-            raise SwiftToolingError(
-                f"Xcode version {major_version}.{minor_version} found, but version 26.0 or higher is required."
-            )
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr if e.stderr else str(e)
-        # Provide helpful message if the error is about Command Line Tools
-        if "command line tools instance" in error_msg.lower():
-            raise SwiftToolingError(
-                "Xcode is not properly configured. The active developer directory points to "
-                "Command Line Tools instead of a full Xcode installation. Please install Xcode "
-                "from the App Store and run 'sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer'"
-            )
-        raise SwiftToolingError(f"Failed to check Xcode version: {error_msg}")
-
     swiftPackageDir = Path("foundation-models-c").resolve()
 
     # `Attachment` (image support) only exists in the macOS 27+ SDK
